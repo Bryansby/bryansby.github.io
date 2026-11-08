@@ -18,6 +18,7 @@ The current version is a draft based on the supplied CV. Publications are awaiti
 
 - `index.html`: introduction, interests, and news.
 - `research.html`: research overview and publications.
+- `tennis.html`: tennis background, Exeter BUCS experience, and photos.
 - `contact.html`: university email, affiliation, GitHub, and LinkedIn links.
 - All HTML files: update the displayed name, page title, description, and footer if needed. Navigation is repeated so each page works without JavaScript.
 - `assets/style.css`: typography, spacing, and colors; edit `--accent` for the link color.
