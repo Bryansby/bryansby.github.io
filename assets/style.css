@@ -44,6 +44,8 @@ p { margin: 0 0 20px; }
 .tennis-gallery { display: flex; gap: 16px; margin-top: 28px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; border-radius: 6px; }
 .tennis-gallery figure { flex: 0 0 100%; margin: 0; min-width: 0; scroll-snap-align: start; }
 .tennis-gallery img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; max-height: 520px; object-fit: contain; border-radius: 6px; }
+.tennis-crop { position: relative; overflow: hidden; width: min(100%, var(--frame-width)); aspect-ratio: var(--crop-ratio); margin-inline: auto; border-radius: 6px; }
+.tennis-crop img { position: absolute; width: var(--image-width); height: var(--image-height); max-height: none; max-width: none; left: var(--image-left); top: var(--image-top); aspect-ratio: auto; object-fit: fill; border-radius: 0; }
 .gallery-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
 .gallery-controls[hidden] { display: none; }
 .gallery-controls button { font: inherit; font-size: 14px; cursor: pointer; }
