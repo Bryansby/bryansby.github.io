@@ -40,9 +40,15 @@ p { margin: 0 0 20px; }
 .research-photo { display: grid; grid-template-columns: 240px minmax(0, 1fr); align-items: center; gap: 36px; margin: 44px 0; padding: 28px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 .research-photo > img { display: block; width: 100%; height: auto; border-radius: 6px; }
 .photo-title { font-size: 23px; line-height: 1.4; letter-spacing: -.5px; margin-bottom: 14px; }
-.tennis-gallery { display: grid; grid-template-columns: 1fr 1.06fr; gap: 24px; margin-top: 28px; }
-.tennis-gallery figure { margin: 0; min-width: 0; }
-.tennis-gallery img { display: block; width: 100%; height: auto; border-radius: 6px; }
+.tennis-gallery { display: flex; gap: 16px; margin-top: 28px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; border-radius: 6px; }
+.tennis-gallery figure { flex: 0 0 100%; margin: 0; min-width: 0; scroll-snap-align: start; }
+.tennis-gallery img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; max-height: 520px; object-fit: contain; border-radius: 6px; }
+.gallery-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+.gallery-controls[hidden] { display: none; }
+.gallery-controls button { font: inherit; font-size: 14px; cursor: pointer; }
+.gallery-controls button:disabled { opacity: .4; cursor: default; }
+.gallery-controls span { font-size: 13px; color: var(--muted); }
+.tennis-gallery:focus-visible, .gallery-controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .tennis-gallery figcaption { margin-top: 10px; color: var(--muted); font-size: 12px; }
 .photo-caption { color: var(--muted); font-size: 15px; margin-bottom: 20px; }
 .event-photo { margin: 28px 0 0; }
@@ -95,7 +101,6 @@ section > h2, .section-heading { padding-bottom: 12px; border-bottom: 1px solid 
 }
 @media (max-width: 560px) {
   .interest-grid { grid-template-columns: 1fr; gap: 10px; }
-  .tennis-gallery { grid-template-columns: 1fr; gap: 24px; }
   .profile-intro { grid-template-columns: 1fr; gap: 28px; margin-bottom: 28px; }
   .profile-portrait { width: min(100%, 290px); }
   .research-photo { grid-template-columns: 1fr; gap: 24px; margin: 32px 0; }
