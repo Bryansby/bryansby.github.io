@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://bryansby.github.io/sitemap.xml
+Sitemap: https://bryansby.github.io/sitemap.txt

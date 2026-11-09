@@ -40,3 +40,7 @@ Official instructions: https://docs.github.com/en/pages/getting-started-with-git
 Repository: https://github.com/Bryansby/bryansby.github.io
 
 GitHub Pages address: https://bryansby.github.io/
+
+## Sitemaps
+
+`sitemap.xml` and `sitemap.txt` list the same canonical pages. The plain-text version is an alternative submitted while investigating a Search Console fetch error. Keep both lists in sync when adding or removing pages; both are advertised in `robots.txt`.
