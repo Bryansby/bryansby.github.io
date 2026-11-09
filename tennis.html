@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#faf9f6">
   <title>Tennis | Boyun Song</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/style.css?v=20261109-navigation">
+  <link rel="stylesheet" href="assets/style.css?v=20261109-tennis-scroll">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -17,7 +17,7 @@
 <p class="eyebrow">BEYOND RESEARCH</p>
 <h1>Tennis</h1>
   <p class="page-intro">Outside research, I am a tennis player. I started learning tennis at the age of four and have represented the University of Exeter in BUCS competitions. I hold China's National Level 2 Athlete (<span lang="zh">国家二级运动员</span>) designation in tennis.</p>
-  <div class="tennis-gallery">
+  <div class="tennis-gallery" id="tennis-gallery" role="region" aria-label="Tennis photos" tabindex="0">
     <figure>
       <img src="assets/boyun-tennis-childhood.jpg" width="1600" height="1272" alt="Boyun Song practising tennis as a child" loading="lazy" decoding="async">
     </figure>
@@ -25,7 +25,48 @@
       <img src="assets/boyun-tennis-exeter.jpg" width="1600" height="1200" alt="Boyun Song with his University of Exeter tennis teammates on an indoor court" loading="lazy" decoding="async">
     </figure>
   </div>
+  <div class="gallery-controls" hidden>
+    <button type="button" class="button" id="previous-photo" aria-controls="tennis-gallery" aria-label="Previous photo">← Previous</button>
+    <span id="photo-count" aria-live="polite" aria-atomic="true">1 / 2</span>
+    <button type="button" class="button" id="next-photo" aria-controls="tennis-gallery" aria-label="Next photo">Next →</button>
+  </div>
 </main>
   <footer class="site-footer"><span>© 2026 Boyun Song</span></footer>
+<script>
+(() => {
+  const gallery = document.getElementById('tennis-gallery');
+  const photos = [...gallery.querySelectorAll('figure')];
+  const previous = document.getElementById('previous-photo');
+  const next = document.getElementById('next-photo');
+  const count = document.getElementById('photo-count');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const position = index => photos[index].offsetLeft - photos[0].offsetLeft;
+  const current = () => photos.reduce((best, photo, index) =>
+    Math.abs(position(index) - gallery.scrollLeft) < Math.abs(position(best) - gallery.scrollLeft) ? index : best, 0);
+  const show = index => gallery.scrollTo({
+    left: position(Math.max(0, Math.min(photos.length - 1, index))),
+    behavior: reducedMotion.matches ? 'auto' : 'smooth'
+  });
+  const update = () => {
+    const index = current();
+    previous.disabled = index === 0;
+    next.disabled = index === photos.length - 1;
+    const label = `${index + 1} / ${photos.length}`;
+    if (count.textContent !== label) count.textContent = label;
+  };
+  previous.addEventListener('click', () => show(current() - 1));
+  next.addEventListener('click', () => show(current() + 1));
+  gallery.addEventListener('scroll', update, { passive: true });
+  gallery.addEventListener('keydown', event => {
+    const targets = { ArrowLeft: current() - 1, ArrowRight: current() + 1, Home: 0, End: photos.length - 1 };
+    if (!(event.key in targets)) return;
+    event.preventDefault();
+    show(targets[event.key]);
+  });
+  window.addEventListener('resize', update);
+  document.querySelector('.gallery-controls').hidden = false;
+  update();
+})();
+</script>
 </body>
 </html>
