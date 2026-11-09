@@ -45,6 +45,9 @@ p { margin: 0 0 20px; }
 .tennis-gallery img { display: block; width: 100%; height: auto; border-radius: 6px; }
 .tennis-gallery figcaption { margin-top: 10px; color: var(--muted); font-size: 12px; }
 .photo-caption { color: var(--muted); font-size: 15px; margin-bottom: 20px; }
+.event-photo { margin: 28px 0 0; }
+.event-photo img { display: block; width: 100%; height: auto; border-radius: 6px; }
+.event-photo figcaption { margin-top: 18px; }
 .placeholder { color: #74736f; }
 section { margin-top: 42px; }
 section > h2, .section-heading { padding-bottom: 12px; border-bottom: 1px solid var(--rule); margin-bottom: 21px; }
