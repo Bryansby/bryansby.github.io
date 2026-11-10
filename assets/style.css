@@ -42,18 +42,21 @@ p { margin: 0 0 20px; }
 .research-photo > .conference-portrait { aspect-ratio: 3 / 4; object-fit: cover; object-position: left center; filter: url(#aiuk-shadow-lift); }
 .photo-title { font-size: 23px; line-height: 1.4; letter-spacing: -.5px; margin-bottom: 14px; }
 .tennis-carousel { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; margin-top: 28px; align-items: center; }
-.tennis-gallery { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 16px; min-width: 0; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; border-radius: 6px; }
+.tennis-gallery { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 16px; min-width: 0; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; border-radius: 6px; }
+.tennis-gallery::-webkit-scrollbar { display: none; }
 .tennis-gallery figure { flex: 0 0 100%; margin: 0; min-width: 0; scroll-snap-align: start; }
 .tennis-gallery img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; max-height: 520px; object-fit: contain; border-radius: 6px; }
 .tennis-crop { position: relative; overflow: hidden; width: min(100%, var(--frame-width)); aspect-ratio: var(--crop-ratio); margin-inline: auto; border-radius: 6px; }
 .tennis-crop img { position: absolute; width: var(--image-width); height: var(--image-height); max-height: none; max-width: none; left: var(--image-left); top: var(--image-top); aspect-ratio: auto; object-fit: fill; border-radius: 0; }
 .gallery-controls { display: contents; }
 .gallery-controls[hidden] { display: none; }
-.gallery-controls button { grid-row: 1; font: inherit; font-size: 14px; min-height: 44px; justify-content: center; cursor: pointer; }
+.gallery-controls button { grid-row: 1; width: 48px; height: 48px; padding: 0; display: grid; place-items: center; border: 1px solid #deddd6; border-radius: 50%; background: #fffefa; color: var(--ink); font: inherit; cursor: pointer; box-shadow: 0 2px 8px rgb(0 0 0 / 6%); transition: background-color .15s, border-color .15s, color .15s; }
+.gallery-controls button span { display: block; font-size: 32px; line-height: 1; margin: -3px 0 0; color: inherit; }
+.gallery-controls button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: #f6eeea; }
 #previous-photo { grid-column: 1; }
 #next-photo { grid-column: 3; }
 #photo-count { grid-column: 2; grid-row: 2; text-align: center; font-size: 13px; color: var(--muted); }
-.gallery-controls button:disabled { opacity: .4; cursor: default; }
+.gallery-controls button:disabled { opacity: .28; cursor: default; box-shadow: none; background: transparent; }
 .tennis-gallery:focus-visible, .gallery-controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .tennis-gallery figcaption { margin-top: 10px; color: var(--muted); font-size: 12px; }
 .photo-caption { color: var(--muted); font-size: 15px; margin-bottom: 20px; }
@@ -107,8 +110,7 @@ section > h2, .section-heading { padding-bottom: 12px; border-bottom: 1px solid 
 }
 @media (max-width: 560px) {
   .tennis-carousel { gap: 8px; }
-  .gallery-controls button { width: 40px; padding: 4px; }
-  .gallery-controls .gallery-label { display: none; }
+  .gallery-controls button { width: 44px; height: 44px; }
   .interest-grid { grid-template-columns: 1fr; gap: 10px; }
   .profile-intro { grid-template-columns: 1fr; gap: 28px; margin-bottom: 28px; }
   .profile-portrait { width: min(100%, 290px); }
