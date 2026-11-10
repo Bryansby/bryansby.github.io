@@ -111,8 +111,11 @@ section > h2, .section-heading { padding-bottom: 12px; border-bottom: 1px solid 
   .site-footer { width: calc(100% - 48px); }
 }
 @media (max-width: 560px) {
-  .tennis-carousel { gap: 8px; }
-  .gallery-controls button { width: 44px; height: 44px; }
+  .tennis-carousel { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .tennis-gallery, #photo-count { grid-column: 1; }
+  .gallery-controls button { width: 44px; height: 44px; z-index: 1; background: rgb(255 254 250 / 94%); border-color: rgb(255 255 255 / 80%); box-shadow: 0 2px 10px rgb(0 0 0 / 18%); }
+  #previous-photo { grid-column: 1; justify-self: start; margin-left: 8px; }
+  #next-photo { grid-column: 1; justify-self: end; margin-right: 8px; }
   .interest-grid { grid-template-columns: 1fr; gap: 10px; }
   .profile-intro { grid-template-columns: 1fr; gap: 28px; margin-bottom: 28px; }
   .profile-portrait { width: min(100%, 290px); }
