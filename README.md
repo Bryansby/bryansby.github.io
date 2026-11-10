@@ -10,7 +10,7 @@ Run from this folder:
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Open http://127.0.0.1:8000. You can also open `index.html` directly. There are no dependencies, build step, external fonts, or JavaScript requirements.
+Open http://127.0.0.1:8000. You can also open `index.html` directly. There are no dependencies, build step, or external fonts. Content and navigation work without JavaScript; the animated background and gallery buttons progressively enhance the pages.
 
 ## Personalize
 
@@ -22,6 +22,7 @@ The current version is a draft based on the supplied CV. Publications are awaiti
 - `contact.html`: university email, affiliation, GitHub, and LinkedIn links.
 - All HTML files: update the displayed name, page title, description, and footer if needed. Navigation is repeated so each page works without JavaScript.
 - `assets/style.css`: typography, spacing, and colors; edit `--accent` for the link color.
+- `assets/gp-background.js`: shared canvas background of Gaussian-process sample paths, generated once with an RBF covariance kernel and smoothly blended over time. The background respects reduced-motion preferences, pauses in hidden tabs, and offers a persistent pause/play control. Tune the palette, amplitude, and motion speed here; the CSS mask keeps the reading area quiet.
 - `assets/favicon.svg`: site initial.
 
 The requested GitHub username is `Bryansby`; its profile links are included. The homepage introduction is drafted from the supplied CV. Background, research interests, project summaries, and university email were transcribed or paraphrased from the supplied CV. LinkedIn was supplied directly by the owner. Publications have no supplied entries yet. No project-specific repository links have been supplied. The CV itself and its telephone number are not included in the website files.
