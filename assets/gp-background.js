@@ -44,11 +44,11 @@
     });
   };
   const palette = [
-    ['29, 171, 192', '109, 119, 225', '190, 102, 193', '237, 146, 112', '91, 190, 154'],
-    ['76, 184, 145', '36, 162, 199', '145, 108, 222', '226, 115, 166', '238, 169, 112'],
-    ['235, 157, 98', '210, 108, 183', '124, 114, 221', '29, 167, 190', '94, 189, 150']
+    ['16, 164, 190', '93, 103, 223', '190, 82, 187', '241, 133, 96', '63, 181, 139'],
+    ['49, 178, 129', '20, 152, 199', '137, 87, 222', '229, 94, 156', '242, 158, 91'],
+    ['240, 145, 77', '212, 87, 177', '111, 94, 220', '15, 160, 189', '65, 180, 135']
   ];
-  const ribbonLayers = 36;
+  const ribbonLayers = 64;
   const motionSpeed = 1.45;
   const bands = palette.map((colors, band) => ({
     colors,
@@ -167,9 +167,9 @@
       const ribbon = Array.from({ length: ribbonLayers }, (_, layer) => {
         const gradient = context.createLinearGradient(0, 0, width, height * 0.3);
         const positionAcross = (layer + 0.5) / ribbonLayers * 2 - 1;
-        const sheen = 0.52 * Math.exp(-(((positionAcross + 0.24) / 0.21) ** 2))
-          + 0.16 * Math.exp(-(((positionAcross - 0.68) / 0.18) ** 2));
-        const shadow = 0.23 * Math.exp(-(((positionAcross - 0.22) / 0.28) ** 2));
+        const sheen = 0.76 * Math.exp(-(((positionAcross + 0.24) / 0.18) ** 2))
+          + 0.24 * Math.exp(-(((positionAcross - 0.68) / 0.16) ** 2));
+        const shadow = 0.28 * Math.exp(-(((positionAcross - 0.22) / 0.28) ** 2));
         rgb.forEach((_, index) => {
           const position = (index + layer / (ribbonLayers - 1) * 1.25) % rgb.length;
           const start = Math.floor(position);
@@ -178,7 +178,7 @@
             const base = channel * (1 - blend) + rgb[(start + 1) % rgb.length][i] * blend;
             return Math.round(base * (1 - shadow) + (255 - base) * sheen);
           });
-          gradient.addColorStop(index / (rgb.length - 1), `rgba(${color.join(',')}, 0.44)`);
+          gradient.addColorStop(index / (rgb.length - 1), `rgba(${color.join(',')}, 0.58)`);
         });
         return gradient;
       });
