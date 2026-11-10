@@ -23,6 +23,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
 .header-inner { max-width: 1120px; margin: auto; min-height: 90px; padding: 16px 36px; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
 .site-name { font-size: 1.75rem; color: var(--ink); font-weight: 650; text-decoration: none; letter-spacing: -.025em; }
 #site-nav {
+  position: relative;
+  isolation: isolate;
   display: flex;
   gap: 2px;
   max-width: 100%;
@@ -48,6 +50,23 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
 #site-nav a:hover { background: #d9d9df; }
 #site-nav a[aria-current="page"] { background: #1d1d1f; color: #fff; }
 #site-nav a:focus-visible { outline-color: #1d1d1f; outline-offset: 1px; }
+#site-nav .section-pill {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 999px;
+  background: #1d1d1f;
+}
+#site-nav.is-sliding .section-pill { display: block; }
+/* Keep each label legible over both the moving pill and the light track. */
+#site-nav.is-sliding a {
+  background: transparent;
+  color: #fff;
+  mix-blend-mode: difference;
+}
 main { width: min(100% - 64px, 800px); min-height: calc(100vh - 218px); margin: 0 auto; padding: 64px 0 76px; }
 .eyebrow { margin: 0 0 10px; color: var(--muted); font-size: var(--label-size); font-weight: 600; letter-spacing: .105em; }
 h1, h2 { text-wrap: balance; }
