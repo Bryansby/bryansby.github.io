@@ -49,6 +49,7 @@
     ['224, 169, 121', '205, 133, 178', '139, 134, 209', '67, 169, 183', '130, 187, 160']
   ];
   const ribbonLayers = 18;
+  const motionSpeed = 1.45;
   const bands = palette.map((colors, band) => ({
     colors,
     center: 0.22 + band * 0.29,
@@ -67,7 +68,8 @@
   let gradients = [];
   let frame = 0;
   let resizeFrame = 0;
-  let previousFrame = 0;
+  let previousFrame = null;
+  let paintElapsed = 0;
   // Wall-clock phase keeps the field visually continuous between pages.
   let time = Date.now() / 1000;
   const yValues = new Float64Array(count);
@@ -84,17 +86,22 @@
   const draw = () => {
     context.clearRect(0, 0, width, height);
     const amplitude = Math.min(height, 950);
+    const motionTime = time * motionSpeed;
     bands.forEach((band, bandIndex) => {
-      const phase = time * 0.036 + bandIndex * 1.7;
+      const phase = motionTime * 0.036 + bandIndex * 1.7;
       const aWeight = Math.cos(phase);
       const bWeight = Math.sin(phase);
       const center = Float64Array.from(band.a, (value, i) =>
-        height * band.center + amplitude * 0.105 * (value * aWeight + band.b[i] * bWeight));
+        height * band.center + amplitude * (
+          0.105 * (value * aWeight + band.b[i] * bWeight) +
+          // A small travelling swell gives the field a continuous liquid flow.
+          0.014 * Math.sin(i / (count - 1) * Math.PI * 2 - motionTime * 0.09 + bandIndex * 1.2)
+        ));
 
       // Feathered colour layers follow the GP curves like translucent silk.
       // The palette shifts across each ribbon as well as along its length.
       const halfWidth = Float64Array.from(center, (_, i) => amplitude * (
-        0.06 + 0.025 * (1 + Math.sin(i / (count - 1) * 5 + phase * 0.65 + bandIndex))
+        0.06 + 0.025 * (1 + Math.sin(i / (count - 1) * 5 - motionTime * 0.07 + bandIndex))
       ));
       for (let layer = 0; layer < ribbonLayers; layer++) {
         const lower = layer / ribbonLayers * 2 - 1;
@@ -118,7 +125,7 @@
 
       band.strands.forEach((strand, index) => {
         if (width < 600 && index % 2) return;
-        const angle = time * 0.046 + strand.phase;
+        const angle = motionTime * 0.046 + strand.phase;
         const a = Math.cos(angle);
         const b = Math.sin(angle);
         for (let i = 0; i < count; i++) {
@@ -172,12 +179,16 @@
   const animate = timestamp => {
     frame = 0;
     if (paused || document.hidden) return;
-    if (!previousFrame) previousFrame = timestamp;
-    const elapsed = timestamp - previousFrame;
-    // A gentle background needs only 30fps, or 24fps on small screens.
-    if (elapsed >= 1000 / (width < 600 ? 24 : 30)) {
-      time += Math.min(elapsed, 100) / 1000;
-      previousFrame = timestamp;
+    const elapsed = previousFrame === null ? 0 : Math.min(timestamp - previousFrame, 100);
+    previousFrame = timestamp;
+    time += elapsed / 1000;
+    paintElapsed += elapsed;
+    // Keep motion independent of refresh rate and retain fractional frame time.
+    // 60fps makes the ribbons fluid; phones use a lighter 30fps budget.
+    const interval = 1000 / (width < 600 ? 30 : 60);
+    if (paintElapsed >= interval - 0.5) {
+      paintElapsed = Math.max(0, paintElapsed - interval);
+      if (paintElapsed >= interval) paintElapsed %= interval;
       draw();
     }
     frame = requestAnimationFrame(animate);
@@ -186,7 +197,8 @@
   const syncMotion = () => {
     cancelAnimationFrame(frame);
     frame = 0;
-    previousFrame = 0;
+    previousFrame = null;
+    paintElapsed = 0;
     if (!paused && !document.hidden) frame = requestAnimationFrame(animate);
   };
 
