@@ -44,11 +44,11 @@
     });
   };
   const palette = [
-    ['55, 173, 185', '129, 137, 217', '195, 120, 183', '229, 156, 132', '129, 189, 163'],
-    ['121, 184, 157', '69, 166, 189', '152, 129, 214', '220, 137, 170', '228, 176, 134'],
-    ['224, 169, 121', '205, 133, 178', '139, 134, 209', '67, 169, 183', '130, 187, 160']
+    ['29, 171, 192', '109, 119, 225', '190, 102, 193', '237, 146, 112', '91, 190, 154'],
+    ['76, 184, 145', '36, 162, 199', '145, 108, 222', '226, 115, 166', '238, 169, 112'],
+    ['235, 157, 98', '210, 108, 183', '124, 114, 221', '29, 167, 190', '94, 189, 150']
   ];
-  const ribbonLayers = 18;
+  const ribbonLayers = 24;
   const motionSpeed = 1.45;
   const bands = palette.map((colors, band) => ({
     colors,
@@ -101,7 +101,7 @@
       // Feathered colour layers follow the GP curves like translucent silk.
       // The palette shifts across each ribbon as well as along its length.
       const halfWidth = Float64Array.from(center, (_, i) => amplitude * (
-        0.06 + 0.025 * (1 + Math.sin(i / (count - 1) * 5 - motionTime * 0.07 + bandIndex))
+        0.081 + 0.03375 * (1 + Math.sin(i / (count - 1) * 5 - motionTime * 0.07 + bandIndex))
       ));
       for (let layer = 0; layer < ribbonLayers; layer++) {
         const lower = layer / ribbonLayers * 2 - 1;
@@ -167,7 +167,7 @@
           const color = rgb[start].map((channel, i) => Math.round(
             channel * (1 - blend) + rgb[(start + 1) % rgb.length][i] * blend
           ));
-          gradient.addColorStop(index / (rgb.length - 1), `rgba(${color.join(',')}, 0.36)`);
+          gradient.addColorStop(index / (rgb.length - 1), `rgba(${color.join(',')}, 0.44)`);
         });
         return gradient;
       });
