@@ -23,7 +23,7 @@
   };
   const normal = () => Math.sqrt(-2 * Math.log(random())) * Math.cos(2 * Math.PI * random());
   const count = 96;
-  const intervalPadding = 16;
+  const intervalPadding = 20;
   const rbf = (distance, lengthScale) => Math.exp(-0.5 * (distance / lengthScale) ** 2);
   const factor = (size, covariance, noise) => {
     const cholesky = Array.from({ length: size }, () => new Float64Array(size));
@@ -55,7 +55,7 @@
   // The padding lets the uncertainty profile drift along its curve without wrapping.
   const makeInterval = lengthScale => {
     const anchors = Array.from({ length: 3 }, (_, i) => 0.05 + (i + 0.17 + 0.66 * random()) * 0.3);
-    const cholesky = factor(anchors.length, (i, j) => rbf(anchors[i] - anchors[j], lengthScale), 0.018);
+    const cholesky = factor(anchors.length, (i, j) => rbf(anchors[i] - anchors[j], lengthScale), 0.01);
     const solved = new Float64Array(anchors.length);
     return Float64Array.from({ length: count + 2 * intervalPadding }, (_, index) => {
       const x = (index - intervalPadding) / (count - 1);
@@ -149,7 +149,8 @@
           0.6 * (flow.c[i] * cWeight + flow.d[i] * dWeight)
         );
         const uncertainty = flow.interval[i + start] * (1 - blend) + flow.interval[i + start + 1] * blend;
-        halfWidth[i] = bandScale * (0.12 + 1.22 * uncertainty);
+        // Leave a soft edge at each pinch and let the gaps fan out further.
+        halfWidth[i] = bandScale * (0.055 + 1.59 * uncertainty);
       }
       for (let layer = 0; layer < ribbonLayers; layer++) {
         const lower = layer / ribbonLayers * 2 - 1;
