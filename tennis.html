@@ -67,30 +67,72 @@
   const next = document.getElementById('next-photo');
   const count = document.getElementById('photo-count');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const position = index => photos[index].offsetLeft - photos[0].offsetLeft;
-  const current = () => photos.reduce((best, photo, index) =>
+  // Matching end slides let the gallery move one photo at each wrap.
+  const cloneSlide = photo => {
+    const clone = photo.cloneNode(true);
+    clone.setAttribute('aria-hidden', 'true');
+    clone.inert = true;
+    clone.querySelector('img').loading = 'eager';
+    return clone;
+  };
+  gallery.prepend(cloneSlide(photos[photos.length - 1]));
+  gallery.append(cloneSlide(photos[0]));
+  const slides = [...gallery.querySelectorAll('figure')];
+  const position = index => slides[index].offsetLeft - slides[0].offsetLeft;
+  const current = () => slides.reduce((best, slide, index) =>
     Math.abs(position(index) - gallery.scrollLeft) < Math.abs(position(best) - gallery.scrollLeft) ? index : best, 0);
-  const show = index => gallery.scrollTo({
-    left: position((index + photos.length) % photos.length),
-    behavior: reducedMotion.matches || index < 0 || index >= photos.length ? 'instant' : 'smooth'
-  });
+  const logicalIndex = index => (index - 1 + photos.length) % photos.length;
+  let active = 0;
+  let target = null;
+  let settleTimer;
   const update = () => {
-    const index = current();
-    previous.disabled = photos.length < 2;
-    next.disabled = photos.length < 2;
-    const label = `${index + 1} / ${photos.length}`;
+    active = logicalIndex(current());
+    const label = `${active + 1} / ${photos.length}`;
     if (count.textContent !== label) count.textContent = label;
   };
+  const settle = () => {
+    const index = current();
+    if (target !== null && Math.abs(gallery.scrollLeft - position(target)) > 1) return;
+    if (Math.abs(gallery.scrollLeft - position(index)) > 1) return;
+    target = null;
+    // Reset to the identical real photo only after the visible slide finishes.
+    if (index === 0 || index === slides.length - 1) {
+      gallery.scrollTo({ left: position(logicalIndex(index) + 1), behavior: 'instant' });
+    }
+    update();
+  };
+  const show = index => {
+    if (target !== null) return;
+    index = Math.max(0, Math.min(slides.length - 1, index));
+    target = index;
+    gallery.scrollTo({ left: position(index), behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settle, 150);
+  };
+  previous.disabled = next.disabled = photos.length < 2;
   previous.addEventListener('click', () => show(current() - 1));
   next.addEventListener('click', () => show(current() + 1));
-  gallery.addEventListener('scroll', update, { passive: true });
+  gallery.addEventListener('scroll', () => {
+    update();
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settle, 150);
+  }, { passive: true });
+  gallery.addEventListener('scrollend', settle);
   gallery.addEventListener('keydown', event => {
-    const targets = { ArrowLeft: current() - 1, ArrowRight: current() + 1, Home: 0, End: photos.length - 1 };
+    const targets = { ArrowLeft: current() - 1, ArrowRight: current() + 1, Home: 1, End: photos.length };
     if (!(event.key in targets)) return;
     event.preventDefault();
     show(targets[event.key]);
   });
-  window.addEventListener('resize', update);
+  // A manual gesture can interrupt button animation without locking controls.
+  const release = () => { target = null; };
+  gallery.addEventListener('pointerdown', release, { passive: true });
+  gallery.addEventListener('wheel', release, { passive: true });
+  window.addEventListener('resize', () => {
+    target = null;
+    gallery.scrollTo({ left: position(active + 1), behavior: 'instant' });
+  });
+  gallery.scrollTo({ left: position(1), behavior: 'instant' });
   document.querySelector('.gallery-controls').hidden = false;
   update();
 })();
