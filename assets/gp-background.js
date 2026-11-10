@@ -142,7 +142,8 @@
       const bWeight = Math.sin(phase);
       const cWeight = Math.cos(secondary);
       const dWeight = Math.sin(secondary);
-      const travel = phase * intervalSamplesPerRadian;
+      // A decreasing lookup offset moves the width profile to the right.
+      const travel = (flow.phase - motionTime * Math.abs(flow.rate)) * intervalSamplesPerRadian;
       const offset = (travel % intervalSamples + intervalSamples) % intervalSamples;
       const start = Math.floor(offset);
       const blend = offset - start;
