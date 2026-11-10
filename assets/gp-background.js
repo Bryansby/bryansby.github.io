@@ -23,7 +23,8 @@
   };
   const normal = () => Math.sqrt(-2 * Math.log(random())) * Math.cos(2 * Math.PI * random());
   const count = 96;
-  const intervalPadding = 20;
+  const intervalSamples = 112;
+  const intervalSamplesPerRadian = 14;
   const rbf = (distance, lengthScale) => Math.exp(-0.5 * (distance / lengthScale) ** 2);
   const factor = (size, covariance, noise) => {
     const cholesky = Array.from({ length: size }, () => new Float64Array(size));
@@ -51,23 +52,29 @@
     };
   };
 
-  // A decorative GP posterior standard deviation around three virtual observations.
-  // The padding lets the uncertainty profile drift along its curve without wrapping.
+  // A periodic GP uncertainty profile lets the bands travel through the loop seam.
   const makeInterval = lengthScale => {
-    const anchors = Array.from({ length: 3 }, (_, i) => 0.05 + (i + 0.17 + 0.66 * random()) * 0.3);
-    const cholesky = factor(anchors.length, (i, j) => rbf(anchors[i] - anchors[j], lengthScale), 0.01);
+    const period = intervalSamples / (count - 1);
+    const radius = period / Math.PI;
+    const kernel = (x, y) => rbf(radius * Math.sin((x - y) / radius), lengthScale);
+    const anchors = Array.from({ length: 3 }, (_, i) => (i + 0.17 + 0.66 * random()) * period / 3);
+    const cholesky = factor(anchors.length, (i, j) => kernel(anchors[i], anchors[j]), 0.01);
     const solved = new Float64Array(anchors.length);
-    return Float64Array.from({ length: count + 2 * intervalPadding }, (_, index) => {
-      const x = (index - intervalPadding) / (count - 1);
+    const profile = new Float64Array(intervalSamples + count);
+    for (let index = 0; index < intervalSamples; index++) {
+      const x = index / (count - 1);
       let variance = 1;
       for (let i = 0; i < anchors.length; i++) {
-        let value = rbf(x - anchors[i], lengthScale);
+        let value = kernel(x, anchors[i]);
         for (let j = 0; j < i; j++) value -= cholesky[i][j] * solved[j];
         solved[i] = value / cholesky[i][i];
         variance -= solved[i] ** 2;
       }
-      return Math.sqrt(Math.max(0, variance));
-    });
+      profile[index] = Math.sqrt(Math.max(0, variance));
+    }
+    // Duplicate the leading samples so interpolation can cross the seam.
+    profile.set(profile.subarray(0, count), intervalSamples);
+    return profile;
   };
   const palette = [
     ['29, 171, 192', '109, 119, 225', '190, 102, 193', '237, 146, 112', '91, 190, 154'],
@@ -135,7 +142,8 @@
       const bWeight = Math.sin(phase);
       const cWeight = Math.cos(secondary);
       const dWeight = Math.sin(secondary);
-      const offset = intervalPadding + (intervalPadding - 1) * Math.sin(phase);
+      const travel = phase * intervalSamplesPerRadian;
+      const offset = (travel % intervalSamples + intervalSamples) % intervalSamples;
       const start = Math.floor(offset);
       const blend = offset - start;
       const bandScale = amplitude * flow.width;
