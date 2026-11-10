@@ -67,6 +67,31 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
   color: #fff;
   mix-blend-mode: difference;
 }
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+
+  #site-nav.has-page-transitions a[aria-current="page"] { position: relative; background: transparent; }
+  #site-nav.has-page-transitions .section-pill { display: block; inset: 0; view-transition-name: section-pill; }
+  #site-nav.has-page-transitions .section-label { color: #fff; mix-blend-mode: difference; }
+  #site-nav.has-page-transitions a[href="index.html"] .section-label { view-transition-name: about-label; }
+  #site-nav.has-page-transitions a[href="research.html"] .section-label { view-transition-name: research-label; }
+  #site-nav.has-page-transitions a[href="tennis.html"] .section-label { view-transition-name: tennis-label; }
+  #site-nav.has-page-transitions a[href="contact.html"] .section-label { view-transition-name: contact-label; }
+
+  ::view-transition-group(*) { animation-duration: 320ms; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-timing-function: ease-in-out; }
+
+  /* Draw a single capsule while its bounds move between the two pages. */
+  ::view-transition-group(section-pill) {
+    z-index: 1;
+    border-radius: 999px;
+    background: #1d1d1f;
+    animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+  }
+  ::view-transition-old(section-pill), ::view-transition-new(section-pill) { display: none; }
+  ::view-transition-group(about-label), ::view-transition-group(research-label),
+  ::view-transition-group(tennis-label), ::view-transition-group(contact-label) { z-index: 2; }
+}
 main { width: min(100% - 64px, 800px); min-height: calc(100vh - 218px); margin: 0 auto; padding: 64px 0 76px; }
 .eyebrow { margin: 0 0 10px; color: var(--muted); font-size: var(--label-size); font-weight: 600; letter-spacing: .105em; }
 h1, h2 { text-wrap: balance; }

@@ -1,12 +1,18 @@
 (() => {
   const nav = document.getElementById('site-nav');
   const current = nav?.querySelector('[aria-current="page"]');
-  if (!current || typeof Element.prototype.animate !== 'function') return;
+  const pill = current?.querySelector('.section-pill');
+  if (!pill) return;
 
+  if ('onpagereveal' in window) {
+    // Let the browser animate both the content and pill, including history navigation.
+    nav.classList.add('has-page-transitions');
+    return;
+  }
+
+  // Keep the click glide in browsers without cross-page transitions.
+  if (typeof Element.prototype.animate !== 'function') return;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const pill = document.createElement('span');
-  pill.className = 'section-pill';
-  pill.setAttribute('aria-hidden', 'true');
   nav.prepend(pill);
   let motion;
 
