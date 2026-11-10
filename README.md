@@ -22,6 +22,7 @@ The current version is a draft based on the supplied CV. Publications are awaiti
 - `contact.html`: university email, affiliation, GitHub, and LinkedIn links.
 - All HTML files: update the displayed name, page title, description, and footer if needed. Navigation is repeated so each page works without JavaScript.
 - `assets/style.css`: typography, spacing, and colors; edit `--accent` for the link color.
+- `assets/scroll-reveal.js`: progressively reveals rendered text rows and photographs as they enter the viewport. Reveals run once, regroup text on resize, and respect reduced-motion preferences. Content remains visible without JavaScript and in print.
 - `assets/gp-background.js`: shared canvas background of Gaussian-process sample paths, generated once with an RBF covariance kernel and smoothly blended over time. The background respects reduced-motion preferences and pauses in hidden tabs. Tune the palette, amplitude, and motion speed here; the CSS mask keeps the reading area quiet.
 - `assets/favicon.svg`: site initial.
 
