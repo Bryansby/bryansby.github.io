@@ -23,45 +23,62 @@
   };
   const normal = () => Math.sqrt(-2 * Math.log(random())) * Math.cos(2 * Math.PI * random());
   const count = 96;
-  const kernel = (x, y) => Math.exp(-0.5 * ((x - y) / 0.23) ** 2);
-  const cholesky = Array.from({ length: count }, () => new Float64Array(count));
-  for (let row = 0; row < count; row++) {
-    for (let column = 0; column <= row; column++) {
-      let value = kernel(row / (count - 1), column / (count - 1));
-      if (row === column) value += 1e-8;
-      for (let k = 0; k < column; k++) value -= cholesky[row][k] * cholesky[column][k];
-      cholesky[row][column] = row === column
-        ? Math.sqrt(Math.max(value, 1e-12))
-        : value / cholesky[column][column];
+  const makeSampler = lengthScale => {
+    const kernel = (x, y) => Math.exp(-0.5 * ((x - y) / lengthScale) ** 2);
+    const cholesky = Array.from({ length: count }, () => new Float64Array(count));
+    for (let row = 0; row < count; row++) {
+      for (let column = 0; column <= row; column++) {
+        let value = kernel(row / (count - 1), column / (count - 1));
+        if (row === column) value += 1e-8;
+        for (let k = 0; k < column; k++) value -= cholesky[row][k] * cholesky[column][k];
+        cholesky[row][column] = row === column
+          ? Math.sqrt(Math.max(value, 1e-12))
+          : value / cholesky[column][column];
+      }
     }
-  }
-  const sample = () => {
-    const noise = Float64Array.from({ length: count }, normal);
-    return Float64Array.from(cholesky, (row, i) => {
-      let value = 0;
-      for (let j = 0; j <= i; j++) value += row[j] * noise[j];
-      return value;
-    });
+    return () => {
+      const noise = Float64Array.from({ length: count }, normal);
+      return Float64Array.from(cholesky, (row, i) => {
+        let value = 0;
+        for (let j = 0; j <= i; j++) value += row[j] * noise[j];
+        return value;
+      });
+    };
   };
   const palette = [
     ['29, 171, 192', '109, 119, 225', '190, 102, 193', '237, 146, 112', '91, 190, 154'],
     ['76, 184, 145', '36, 162, 199', '145, 108, 222', '226, 115, 166', '238, 169, 112'],
     ['235, 157, 98', '210, 108, 183', '124, 114, 221', '29, 167, 190', '94, 189, 150']
   ];
-  const ribbonLayers = 24;
+  const ribbonLayers = 12;
   const motionSpeed = 2.2;
-  const bands = palette.map((colors, band) => ({
-    colors,
-    center: 0.22 + band * 0.29,
-    a: sample(),
-    b: sample(),
-    strands: Array.from({ length: 12 }, (_, i) => ({
+  const flowCount = 20;
+  // Each ribbon is its own GP, with a different length scale and time evolution.
+  // Jittered positions spread the field across the page without shared bands.
+  const flows = Array.from({ length: flowCount }, (_, index) => {
+    const sample = makeSampler(0.1 + random() * 0.23);
+    return {
+      colors: palette[Math.floor(random() * palette.length)],
+      colorShift: random() * 5,
+      mean: 0.05 + (index + random()) / flowCount * 0.9,
+      deviation: 0.065 + random() * 0.085,
+      width: 0.009 + random() * 0.022,
+      opacity: 0.26 + random() * 0.16,
+      lineWidth: 0.85 + random() * 0.7,
+      lineAlpha: 0.6 + random() * 0.25,
+      rate: (0.026 + random() * 0.028) * (random() < 0.5 ? -1 : 1),
+      phase: random() * Math.PI * 2,
+      secondaryPhase: random() * Math.PI * 2,
       a: sample(),
       b: sample(),
-      offset: (i - 5.5) / 5.5,
-      phase: random() * Math.PI * 2
-    }))
-  }));
+      c: sample(),
+      d: sample(),
+      widthA: sample(),
+      widthB: sample(),
+      y: new Float64Array(count),
+      spread: new Float64Array(count)
+    };
+  });
 
   let width = 0;
   let height = 0;
@@ -72,7 +89,6 @@
   let paintElapsed = 0;
   // Wall-clock phase keeps the field visually continuous between pages.
   let time = Date.now() / 1000;
-  const yValues = new Float64Array(count);
 
   const trace = values => {
     context.beginPath();
@@ -87,26 +103,33 @@
     context.clearRect(0, 0, width, height);
     const amplitude = Math.min(height, 950);
     const motionTime = time * motionSpeed;
-    bands.forEach((band, bandIndex) => {
-      const phase = motionTime * 0.036 + bandIndex * 1.7;
+    flows.forEach((flow, flowIndex) => {
+      if (width < 600 && flowIndex % 3 === 2) return;
+      const phase = motionTime * flow.rate + flow.phase;
+      const secondary = motionTime * flow.rate * Math.SQRT2 + flow.secondaryPhase;
       const aWeight = Math.cos(phase);
       const bWeight = Math.sin(phase);
-      const center = Float64Array.from(band.a, (value, i) =>
-        height * band.center + amplitude * (
-          0.105 * (value * aWeight + band.b[i] * bWeight) +
-          // A small travelling swell gives the field a continuous liquid flow.
-          0.014 * Math.sin(i / (count - 1) * Math.PI * 2 - motionTime * 0.09 + bandIndex * 1.2)
-        ));
-
-      // Feathered colour layers follow the GP curves like translucent silk.
-      // The palette shifts across each ribbon as well as along its length.
-      const halfWidth = Float64Array.from(center, (_, i) => amplitude * (
-        0.081 + 0.03375 * (1 + Math.sin(i / (count - 1) * 5 - motionTime * 0.07 + bandIndex))
-      ));
+      const cWeight = Math.cos(secondary);
+      const dWeight = Math.sin(secondary);
+      const widthCos = Math.cos(phase * 0.7);
+      const widthSin = Math.sin(phase * 0.7);
+      const center = flow.y;
+      const halfWidth = flow.spread;
+      for (let i = 0; i < count; i++) {
+        // Independent GP draws at two time scales avoid a shared looping sway.
+        // The 0.8/0.6 weights preserve the samples' unit variance.
+        center[i] = height * flow.mean + amplitude * flow.deviation * (
+          0.8 * (flow.a[i] * aWeight + flow.b[i] * bWeight) +
+          0.6 * (flow.c[i] * cWeight + flow.d[i] * dWeight)
+        );
+        halfWidth[i] = amplitude * flow.width * (
+          0.85 + 0.25 * Math.tanh(flow.widthA[i] * widthCos + flow.widthB[i] * widthSin)
+        );
+      }
       for (let layer = 0; layer < ribbonLayers; layer++) {
         const lower = layer / ribbonLayers * 2 - 1;
         const upper = (layer + 1) / ribbonLayers * 2 - 1;
-        context.fillStyle = gradients[bandIndex].ribbon[layer];
+        context.fillStyle = gradients[flowIndex].ribbon[layer];
         context.globalAlpha = Math.sin(Math.PI * (layer + 0.5) / ribbonLayers) ** 0.85;
         context.beginPath();
         for (let i = 0; i < count; i++) {
@@ -121,24 +144,11 @@
         context.closePath();
         context.fill();
       }
-      context.globalAlpha = 1;
-
-      band.strands.forEach((strand, index) => {
-        if (width < 600 && index % 2) return;
-        const angle = motionTime * 0.046 + strand.phase;
-        const a = Math.cos(angle);
-        const b = Math.sin(angle);
-        for (let i = 0; i < count; i++) {
-          yValues[i] = center[i] + amplitude * (
-            strand.offset * 0.044 + (strand.a[i] * a + strand.b[i] * b) * 0.044
-          );
-        }
-        trace(yValues);
-        context.strokeStyle = gradients[bandIndex].line;
-        context.lineWidth = index % 4 === 0 ? 1.6 : 0.95;
-        context.globalAlpha = index % 4 === 0 ? 0.9 : 0.65;
-        context.stroke();
-      });
+      trace(center);
+      context.strokeStyle = gradients[flowIndex].line;
+      context.lineWidth = flow.lineWidth;
+      context.globalAlpha = flow.lineAlpha;
+      context.stroke();
       context.globalAlpha = 1;
     });
   };
@@ -152,22 +162,25 @@
     canvas.height = Math.round(height * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     context.lineJoin = 'round';
-    gradients = bands.map(band => {
+    gradients = flows.map(flow => {
+      const rgb = flow.colors.map(color => color.split(',').map(Number));
+      const colorAt = position => {
+        const wrapped = position % rgb.length;
+        const start = Math.floor(wrapped);
+        const blend = wrapped - start;
+        return rgb[start].map((channel, i) => Math.round(
+          channel * (1 - blend) + rgb[(start + 1) % rgb.length][i] * blend
+        )).join(',');
+      };
       const line = context.createLinearGradient(0, 0, width, height * 0.25);
-      band.colors.forEach((color, index) => {
-        line.addColorStop(index / (band.colors.length - 1), `rgba(${color}, 0.8)`);
+      rgb.forEach((_, index) => {
+        line.addColorStop(index / (rgb.length - 1), `rgba(${colorAt(index + flow.colorShift + 0.4)}, 0.85)`);
       });
-      const rgb = band.colors.map(color => color.split(',').map(Number));
       const ribbon = Array.from({ length: ribbonLayers }, (_, layer) => {
         const gradient = context.createLinearGradient(0, 0, width, height * 0.3);
         rgb.forEach((_, index) => {
-          const position = (index + layer / (ribbonLayers - 1) * 1.6) % rgb.length;
-          const start = Math.floor(position);
-          const blend = position - start;
-          const color = rgb[start].map((channel, i) => Math.round(
-            channel * (1 - blend) + rgb[(start + 1) % rgb.length][i] * blend
-          ));
-          gradient.addColorStop(index / (rgb.length - 1), `rgba(${color.join(',')}, 0.58)`);
+          const color = colorAt(index + flow.colorShift + layer / (ribbonLayers - 1) * 0.8);
+          gradient.addColorStop(index / (rgb.length - 1), `rgba(${color}, ${flow.opacity})`);
         });
         return gradient;
       });
