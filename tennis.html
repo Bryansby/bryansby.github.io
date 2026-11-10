@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#faf9f6">
   <title>Tennis | Boyun Song</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/style.css?v=20261109-tennis-crops">
+  <link rel="stylesheet" href="assets/style.css?v=20261110-side-controls">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -17,6 +17,7 @@
 <p class="eyebrow">BEYOND RESEARCH</p>
 <h1>Tennis</h1>
   <p class="page-intro">Outside research, I am a tennis player. I started learning tennis at the age of four and have represented the University of Exeter in BUCS competitions. I hold China's National Level 2 Athlete (<span lang="zh">国家二级运动员</span>) designation in tennis.</p>
+  <div class="tennis-carousel">
   <div class="tennis-gallery" id="tennis-gallery" role="region" aria-label="Tennis photos" tabindex="0">
     <figure>
       <img src="assets/boyun-tennis-childhood.jpg" width="1600" height="1272" alt="Boyun Song practising tennis as a child" loading="lazy" decoding="async">
@@ -51,9 +52,10 @@
     </figure>
   </div>
   <div class="gallery-controls" hidden>
-    <button type="button" class="button" id="previous-photo" aria-controls="tennis-gallery" aria-label="Previous photo">← Previous</button>
+    <button type="button" class="button" id="previous-photo" aria-controls="tennis-gallery" aria-label="Previous photo"><span aria-hidden="true">←</span><span class="gallery-label">Previous</span></button>
     <span id="photo-count" aria-live="polite" aria-atomic="true">1 / 7</span>
-    <button type="button" class="button" id="next-photo" aria-controls="tennis-gallery" aria-label="Next photo">Next →</button>
+    <button type="button" class="button" id="next-photo" aria-controls="tennis-gallery" aria-label="Next photo"><span class="gallery-label">Next</span><span aria-hidden="true">→</span></button>
+  </div>
   </div>
 </main>
   <footer class="site-footer"><span>© 2026 Boyun Song</span></footer>
