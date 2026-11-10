@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#faf9f6">
   <title>Tennis | Boyun Song</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/style.css?v=20261110-sliding-pill">
+  <link rel="stylesheet" href="assets/style.css?v=20261110-page-fade">
   <script src="assets/gp-background.js?v=20261110-gp-intervals-right" defer></script>
   <style>
     @media (max-width: 560px) {
@@ -35,7 +35,7 @@
       .tennis-gallery, body::after { transition: none; }
     }
   </style>
-  <script src="assets/navigation.js?v=20261110-sliding-pill" defer></script>
+  <script src="assets/navigation.js?v=20261110-page-fade" defer></script>
   <script src="assets/scroll-reveal.js?v=20261110-scroll-sync" defer></script>
 </head>
 <body>
@@ -44,10 +44,10 @@
     <div class="header-inner">
       <a class="site-name" href="index.html">Boyun Song</a>
       <nav id="site-nav" aria-label="Main navigation">
-        <a href="index.html">About</a>
-        <a href="research.html">Research</a>
-        <a href="tennis.html" aria-current="page">Tennis</a>
-        <a href="contact.html">Contact</a>
+        <a href="index.html"><span class="section-label">About</span></a>
+        <a href="research.html"><span class="section-label">Research</span></a>
+        <a href="tennis.html" aria-current="page"><span class="section-pill" aria-hidden="true"></span><span class="section-label">Tennis</span></a>
+        <a href="contact.html"><span class="section-label">Contact</span></a>
       </nav>
     </div>
   </header>
