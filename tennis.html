@@ -9,7 +9,13 @@
   <title>Tennis | Boyun Song</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/style.css?v=20261110-mobile-overlay">
-  <script src="assets/gp-background.js?v=20261110-gp-flow" defer></script>
+  <script src="assets/gp-background.js?v=20261110-gp-colour" defer></script>
+  <style>
+    @media (max-width: 560px) {
+      .tennis-carousel { margin-top: 16px; gap: 10px; }
+      .tennis-gallery { height: var(--active-photo-height, auto); }
+    }
+  </style>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -86,8 +92,12 @@
   let active = 0;
   let target = null;
   let settleTimer;
+  const fitPhoto = () => {
+    gallery.style.setProperty('--active-photo-height', `${photos[active].getBoundingClientRect().height}px`);
+  };
   const update = () => {
     active = logicalIndex(current());
+    fitPhoto();
     const label = `${active + 1} / ${photos.length}`;
     if (count.textContent !== label) count.textContent = label;
   };
@@ -132,7 +142,10 @@
   window.addEventListener('resize', () => {
     target = null;
     gallery.scrollTo({ left: position(active + 1), behavior: 'instant' });
+    fitPhoto();
   });
+  const photoSizes = new ResizeObserver(fitPhoto);
+  photos.forEach(photo => photoSizes.observe(photo));
   gallery.scrollTo({ left: position(1), behavior: 'instant' });
   document.querySelector('.gallery-controls').hidden = false;
   update();
