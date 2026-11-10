@@ -17,6 +17,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
 .site-header { background: #fffefa; border-bottom: 1px solid var(--rule); }
 .header-inner { max-width: 1120px; margin: auto; min-height: 90px; padding: 16px 36px; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
 .site-name { font-size: 25px; color: var(--ink); font-weight: 650; text-decoration: none; letter-spacing: -.8px; }
+.nav-toggle { display: none; }
 nav { display: flex; flex-wrap: wrap; gap: 25px; }
 nav a { color: #626461; font-size: 18px; text-decoration: none; padding: 7px 0; }
 nav a:hover, nav a[aria-current="page"] { color: var(--accent); }
@@ -98,9 +99,24 @@ section > h2, .section-heading { padding-bottom: 12px; border-bottom: 1px solid 
   .profile-intro { grid-template-columns: minmax(0, 1fr) 210px; gap: 28px; }
   .profile-intro .profile-links { gap: 8px; }
   .research-photo { grid-template-columns: 200px minmax(0, 1fr); gap: 24px; }
-  .header-inner { align-items: flex-start; flex-direction: column; gap: 8px; padding: 18px 24px; }
-  nav { gap: 10px 21px; }
-  nav a { font-size: 16px; padding: 5px 0; }
+  .header-inner { flex-wrap: wrap; min-height: 0; gap: 8px; padding: 10px 24px; }
+  .nav-toggle:not([hidden]) {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid #c7c6be;
+    border-radius: 4px;
+    background: #fffefa;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .nav-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .nav-toggle:not([hidden])[aria-expanded="false"] + nav { display: none; }
+  .header-inner nav { flex: 0 0 100%; flex-direction: column; gap: 0; }
+  .header-inner nav a { display: flex; align-items: center; min-height: 44px; font-size: 16px; padding: 6px 0; }
+  .header-inner nav a[aria-current="page"] { box-shadow: none; font-weight: 600; }
   main { width: calc(100% - 48px); padding: 40px 0 55px; }
   body { font-size: 16px; }
   h1 { letter-spacing: -1.3px; }
