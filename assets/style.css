@@ -5,6 +5,9 @@
   --muted: #595b5e;
   --accent: #8c4844;
   --rule: #deded6;
+  --section-highlight: linear-gradient(145deg, #55374e, #3b263d);
+  --section-radius: 12px;
+  --section-shadow: 0 2px 4px rgb(59 38 61 / 22%), inset 0 1px rgb(255 255 255 / 13%);
   --text-size: 1.1875rem;
   --small-text: .9375rem;
   --label-size: .8125rem;
@@ -30,8 +33,9 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
   max-width: 100%;
   padding: 5px;
   overflow-x: auto;
-  border-radius: 999px;
-  background: #e6e6eb;
+  border-radius: calc(var(--section-radius) + 5px);
+  background: #eee8ef;
+  box-shadow: inset 0 0 0 1px rgb(85 55 78 / 10%);
 }
 #site-nav a {
   display: grid;
@@ -39,17 +43,21 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
   place-items: center;
   min-height: 44px;
   padding: 0 20px;
-  border-radius: 999px;
-  color: #303033;
+  border-radius: var(--section-radius);
+  color: #3d303d;
   font-size: 1.0625rem;
   font-weight: 500;
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
 }
-#site-nav a:hover { background: #d9d9df; }
-#site-nav a[aria-current="page"] { background: #1d1d1f; color: #fff; }
-#site-nav a:focus-visible { outline-color: #1d1d1f; outline-offset: 1px; }
+#site-nav a:hover { background: #e1d6e2; }
+#site-nav a[aria-current="page"], #site-nav .section-pill {
+  background: var(--section-highlight);
+  box-shadow: var(--section-shadow);
+}
+#site-nav a[aria-current="page"] { color: #fff; }
+#site-nav a:focus-visible { outline-color: #55374e; outline-offset: 1px; }
 #site-nav .section-pill {
   display: none;
   position: absolute;
@@ -57,20 +65,20 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
   left: 0;
   z-index: -1;
   pointer-events: none;
-  border-radius: 999px;
-  background: #1d1d1f;
+  border-radius: var(--section-radius);
 }
 #site-nav.is-sliding .section-pill { display: block; }
 /* Keep each label legible over both the moving pill and the light track. */
 #site-nav.is-sliding a {
   background: transparent;
+  box-shadow: none;
   color: #fff;
   mix-blend-mode: difference;
 }
 @media (prefers-reduced-motion: no-preference) {
   @view-transition { navigation: auto; }
 
-  #site-nav.has-page-transitions a[aria-current="page"] { position: relative; background: transparent; }
+  #site-nav.has-page-transitions a[aria-current="page"] { position: relative; background: transparent; box-shadow: none; }
   #site-nav.has-page-transitions .section-pill { display: block; inset: 0; view-transition-name: section-pill; }
   #site-nav.has-page-transitions .section-label { color: #fff; mix-blend-mode: difference; }
   #site-nav.has-page-transitions a[href="index.html"] .section-label { view-transition-name: about-label; }
@@ -81,11 +89,12 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
   ::view-transition-group(*) { animation-duration: 320ms; }
   ::view-transition-old(root), ::view-transition-new(root) { animation-timing-function: ease-in-out; }
 
-  /* Draw a single capsule while its bounds move between the two pages. */
+  /* Use the same highlight while its bounds move between pages. */
   ::view-transition-group(section-pill) {
     z-index: 1;
-    border-radius: 999px;
-    background: #1d1d1f;
+    border-radius: var(--section-radius);
+    background: var(--section-highlight);
+    box-shadow: var(--section-shadow);
     animation-timing-function: cubic-bezier(.22, 1, .36, 1);
   }
   ::view-transition-old(section-pill), ::view-transition-new(section-pill) { display: none; }
