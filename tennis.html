@@ -12,6 +12,13 @@
   <script src="assets/gp-background.js?v=20261110-gp-satin" defer></script>
   <style>
     @media (max-width: 560px) {
+      html { overflow-anchor: none; }
+      body::after {
+        content: "";
+        display: block;
+        height: var(--photo-scroll-reserve, 0px);
+        transition: height 320ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
       .tennis-carousel { margin-top: 16px; gap: 10px; }
       .tennis-gallery {
         height: var(--active-photo-height, auto);
@@ -19,7 +26,7 @@
       }
     }
     @media (max-width: 560px) and (prefers-reduced-motion: reduce) {
-      .tennis-gallery { transition: none; }
+      .tennis-gallery, body::after { transition: none; }
     }
   </style>
 </head>
@@ -98,8 +105,34 @@
   let active = 0;
   let target = null;
   let settleTimer;
+  let scrollLockFrame;
+  let lockedScrollTop = null;
+  const stopScrollLock = () => {
+    cancelAnimationFrame(scrollLockFrame);
+    lockedScrollTop = null;
+  };
+  const holdScrollPosition = () => {
+    cancelAnimationFrame(scrollLockFrame);
+    if (!window.matchMedia('(max-width: 560px)').matches) return;
+    const top = lockedScrollTop ?? window.scrollY;
+    lockedScrollTop = top;
+    const until = performance.now() + 900;
+    const hold = () => {
+      window.scrollTo({ top, behavior: 'instant' });
+      if (performance.now() < until) scrollLockFrame = requestAnimationFrame(hold);
+      else lockedScrollTop = null;
+    };
+    scrollLockFrame = requestAnimationFrame(hold);
+  };
+  ['wheel', 'touchmove', 'pointerdown', 'keydown'].forEach(type =>
+    window.addEventListener(type, stopScrollLock, { passive: true }));
   const fitPhoto = () => {
-    gallery.style.setProperty('--active-photo-height', `${photos[active].getBoundingClientRect().height}px`);
+    const heights = photos.map(photo => photo.getBoundingClientRect().height);
+    const height = `${heights[active]}px`;
+    if (gallery.style.getPropertyValue('--active-photo-height') !== height) holdScrollPosition();
+    gallery.style.setProperty('--active-photo-height', height);
+    // Preserve the page's scroll range without leaving gaps around the photo.
+    document.body.style.setProperty('--photo-scroll-reserve', `${Math.max(...heights) - heights[active]}px`);
   };
   const update = () => {
     active = logicalIndex(current());
@@ -121,6 +154,7 @@
   const show = index => {
     if (target !== null) return;
     index = Math.max(0, Math.min(slides.length - 1, index));
+    holdScrollPosition();
     target = index;
     gallery.scrollTo({ left: position(index), behavior: reducedMotion.matches ? 'instant' : 'smooth' });
     clearTimeout(settleTimer);
