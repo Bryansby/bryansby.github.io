@@ -12,18 +12,7 @@
   document.body.prepend(canvas);
 
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const storageKey = 'boyun-background-paused';
   let paused = motionPreference.matches;
-  try {
-    const saved = localStorage.getItem(storageKey);
-    if (saved !== null && !motionPreference.matches) paused = saved === 'true';
-  } catch (_) { /* The background also works when storage is unavailable. */ }
-
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.className = 'motion-toggle';
-  toggle.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path class="motion-pause" d="M5 3v10M11 3v10"/><path class="motion-play" d="m5 3 7 5-7 5Z"/></svg><span></span>';
-  document.body.append(toggle);
 
   // Seeded normals give the same visual identity on every page, without assets
   // or a rendering library. The RBF kernel makes the paths smoothly correlated.
@@ -55,10 +44,11 @@
     });
   };
   const palette = [
-    ['83, 135, 145', '137, 126, 162', '164, 131, 111'],
-    ['119, 143, 134', '80, 128, 144', '146, 119, 152'],
-    ['158, 133, 108', '132, 119, 155', '93, 143, 144']
+    ['55, 173, 185', '129, 137, 217', '195, 120, 183', '229, 156, 132', '129, 189, 163'],
+    ['121, 184, 157', '69, 166, 189', '152, 129, 214', '220, 137, 170', '228, 176, 134'],
+    ['224, 169, 121', '205, 133, 178', '139, 134, 209', '67, 169, 183', '130, 187, 160']
   ];
+  const ribbonLayers = 18;
   const bands = palette.map((colors, band) => ({
     colors,
     center: 0.22 + band * 0.29,
@@ -101,20 +91,30 @@
       const center = Float64Array.from(band.a, (value, i) =>
         height * band.center + amplitude * 0.105 * (value * aWeight + band.b[i] * bWeight));
 
-      // Very light translucent ribbons lend depth to the fine sample paths.
-      context.fillStyle = gradients[bandIndex].wash;
-      context.beginPath();
-      for (let i = 0; i < count; i++) {
-        const x = (i / (count - 1) * 1.1 - 0.05) * width;
-        const y = center[i] - amplitude * 0.052;
-        if (i === 0) context.moveTo(x, y);
-        else context.lineTo(x, y);
+      // Feathered colour layers follow the GP curves like translucent silk.
+      // The palette shifts across each ribbon as well as along its length.
+      const halfWidth = Float64Array.from(center, (_, i) => amplitude * (
+        0.06 + 0.025 * (1 + Math.sin(i / (count - 1) * 5 + phase * 0.65 + bandIndex))
+      ));
+      for (let layer = 0; layer < ribbonLayers; layer++) {
+        const lower = layer / ribbonLayers * 2 - 1;
+        const upper = (layer + 1) / ribbonLayers * 2 - 1;
+        context.fillStyle = gradients[bandIndex].ribbon[layer];
+        context.globalAlpha = Math.sin(Math.PI * (layer + 0.5) / ribbonLayers) ** 0.85;
+        context.beginPath();
+        for (let i = 0; i < count; i++) {
+          const x = (i / (count - 1) * 1.1 - 0.05) * width;
+          const y = center[i] + halfWidth[i] * lower;
+          if (i === 0) context.moveTo(x, y);
+          else context.lineTo(x, y);
+        }
+        for (let i = count - 1; i >= 0; i--) {
+          context.lineTo((i / (count - 1) * 1.1 - 0.05) * width, center[i] + halfWidth[i] * upper);
+        }
+        context.closePath();
+        context.fill();
       }
-      for (let i = count - 1; i >= 0; i--) {
-        context.lineTo((i / (count - 1) * 1.1 - 0.05) * width, center[i] + amplitude * 0.052);
-      }
-      context.closePath();
-      context.fill();
+      context.globalAlpha = 1;
 
       band.strands.forEach((strand, index) => {
         if (width < 600 && index % 2) return;
@@ -128,8 +128,8 @@
         }
         trace(yValues);
         context.strokeStyle = gradients[bandIndex].line;
-        context.lineWidth = index % 4 === 0 ? 1.15 : 0.7;
-        context.globalAlpha = index % 4 === 0 ? 0.7 : 0.42;
+        context.lineWidth = index % 4 === 0 ? 1.4 : 0.8;
+        context.globalAlpha = index % 4 === 0 ? 0.8 : 0.5;
         context.stroke();
       });
       context.globalAlpha = 1;
@@ -147,12 +147,24 @@
     context.lineJoin = 'round';
     gradients = bands.map(band => {
       const line = context.createLinearGradient(0, 0, width, height * 0.25);
-      const wash = context.createLinearGradient(0, 0, width, height * 0.25);
       band.colors.forEach((color, index) => {
-        line.addColorStop(index / 2, `rgba(${color}, 0.65)`);
-        wash.addColorStop(index / 2, `rgba(${color}, 0.035)`);
+        line.addColorStop(index / (band.colors.length - 1), `rgba(${color}, 0.8)`);
       });
-      return { line, wash };
+      const rgb = band.colors.map(color => color.split(',').map(Number));
+      const ribbon = Array.from({ length: ribbonLayers }, (_, layer) => {
+        const gradient = context.createLinearGradient(0, 0, width, height * 0.3);
+        rgb.forEach((_, index) => {
+          const position = (index + layer / (ribbonLayers - 1) * 1.6) % rgb.length;
+          const start = Math.floor(position);
+          const blend = position - start;
+          const color = rgb[start].map((channel, i) => Math.round(
+            channel * (1 - blend) + rgb[(start + 1) % rgb.length][i] * blend
+          ));
+          gradient.addColorStop(index / (rgb.length - 1), `rgba(${color.join(',')}, 0.36)`);
+        });
+        return gradient;
+      });
+      return { line, ribbon };
     });
     draw();
   };
@@ -175,19 +187,11 @@
     cancelAnimationFrame(frame);
     frame = 0;
     previousFrame = 0;
-    toggle.dataset.paused = String(paused);
-    toggle.querySelector('span').textContent = paused ? 'Play background' : 'Pause background';
-    toggle.setAttribute('aria-label', paused ? 'Play background animation' : 'Pause background animation');
     if (!paused && !document.hidden) frame = requestAnimationFrame(animate);
   };
 
-  toggle.addEventListener('click', () => {
-    paused = !paused;
-    try { localStorage.setItem(storageKey, String(paused)); } catch (_) { /* Optional preference. */ }
-    syncMotion();
-  });
   motionPreference.addEventListener('change', event => {
-    if (event.matches) paused = true;
+    paused = event.matches;
     syncMotion();
   });
   document.addEventListener('visibilitychange', syncMotion);
