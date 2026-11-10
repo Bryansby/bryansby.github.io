@@ -1,32 +1,13 @@
 (() => {
   const main = document.querySelector('main');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (!main || reducedMotion.matches || !('IntersectionObserver' in window)) return;
+  if (!main || reducedMotion.matches) return;
 
   const root = document.documentElement;
   const copies = [];
-  const groups = new Map();
-  let resizeFrame;
-
-  const reveal = (elements, delay = 0, immediate = false) => {
-    elements.forEach(element => {
-      element.style.setProperty('--reveal-delay', `${delay}ms`);
-      if (immediate) element.classList.add('reveal-immediate');
-      element.classList.add('is-revealed');
-    });
-  };
-
-  // Observe one word per rendered line, so a long paragraph reveals a row
-  // at a time as it enters the viewport, including after mobile reflow.
-  const observer = new IntersectionObserver(entries => {
-    entries.filter(entry => entry.isIntersecting)
-      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-      .forEach((entry, index) => {
-        reveal(groups.get(entry.target) || [entry.target], Math.min(index * 65, 260));
-        observer.unobserve(entry.target);
-        groups.delete(entry.target);
-      });
-  }, { rootMargin: '0px 0px -32px 0px', threshold: 0 });
+  let groups = [];
+  let frame = 0;
+  let needsMeasure = true;
 
   const blocks = [...main.querySelectorAll(
     'h1, h2, h3, .eyebrow, .entry-meta, .profile-links, .project-links, ' +
@@ -35,11 +16,13 @@
     '.event-photo > img, .tennis-carousel'
   )].filter(element => !element.parentElement.closest('.contact-row, .tennis-carousel'));
 
-  const showAll = () => {
-    observer.disconnect();
-    groups.clear();
-    cancelAnimationFrame(resizeFrame);
-    root.classList.remove('scroll-reveals');
+  // Layout offsets stay fixed as the reveal moves the painted content.
+  const pageTop = element => {
+    let top = element.offsetTop;
+    for (let parent = element.offsetParent; parent; parent = parent.offsetParent) {
+      top += parent.offsetTop + parent.clientTop;
+    }
+    return top;
   };
 
   try {
@@ -75,61 +58,74 @@
         ? 'image' : 'block';
     });
 
-    const observeLines = () => {
-      observer.disconnect();
-      groups.clear();
-      blocks.filter(element => !element.classList.contains('is-revealed'))
-        .forEach(element => observer.observe(element));
+    const measure = () => {
+      const height = root.clientHeight;
+      const bottom = Math.max(0, root.scrollHeight - height);
+      const rangeFor = elements => {
+        const first = elements[0];
+        const entry = pageTop(first) - height;
+        const distance = first.dataset.reveal === 'image'
+          ? Math.min(220, height * .28)
+          : Math.min(120, height * .18);
+        // Leave the first screen readable and finish every reveal by page end.
+        const end = entry <= 0 ? 0 : Math.min(entry + distance, bottom);
+        return { elements, start: Math.min(entry, end - 1), end, progress: null };
+      };
+
+      groups = blocks.map(element => rangeFor([element]));
 
       copies.forEach(words => {
         const lines = new Map();
         words.forEach(word => {
-          // offsetTop ignores animation transforms, keeping rows stable.
           const top = word.offsetTop;
           if (!lines.has(top)) lines.set(top, []);
           lines.get(top).push(word);
         });
-        lines.forEach(line => {
-          const pending = line.filter(word => !word.classList.contains('is-revealed'));
-          if (!pending.length) return;
-          if (pending.length !== line.length) {
-            reveal(pending, 0, true);
-          } else {
-            groups.set(line[0], line);
-            observer.observe(line[0]);
-          }
-        });
+        lines.forEach(line => groups.push(rangeFor(line)));
       });
     };
 
-    const revealWithin = target => {
-      if (!(target instanceof Element)) return;
-      const container = target.closest('.reveal-copy, [data-reveal]') || target;
-      reveal([container, ...container.querySelectorAll('.reveal-word, [data-reveal]')], 0, true);
+    const render = () => {
+      frame = 0;
+      if (reducedMotion.matches) return;
+      if (needsMeasure) {
+        measure();
+        needsMeasure = false;
+      }
+
+      const scroll = Math.max(0, window.scrollY);
+      groups.forEach(group => {
+        const fraction = Math.min(1, Math.max(0, (scroll - group.start) / (group.end - group.start)));
+        const progress = 1 - (1 - fraction) ** 2;
+        if (progress === group.progress) return;
+        group.progress = progress;
+        group.elements.forEach(element => {
+          element.classList.toggle('is-revealing', progress < 1);
+          element.style.setProperty('--reveal-progress', progress);
+        });
+      });
     };
-    const revealAnchor = () => {
-      try {
-        const id = decodeURIComponent(window.location.hash.slice(1));
-        if (id) revealWithin(document.getElementById(id));
-      } catch { /* An invalid URL fragment must not interrupt the page. */ }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(render);
+    };
+    const remeasure = () => {
+      needsMeasure = true;
+      schedule();
     };
 
-    observeLines();
+    render();
     root.classList.add('scroll-reveals');
-    revealAnchor();
-    // Focused links and anchor destinations should be readable immediately.
-    main.addEventListener('focusin', event => revealWithin(event.target));
-    window.addEventListener('hashchange', revealAnchor);
-    window.addEventListener('resize', () => {
-      if (!root.classList.contains('scroll-reveals')) return;
-      cancelAnimationFrame(resizeFrame);
-      resizeFrame = requestAnimationFrame(observeLines);
-    }, { passive: true });
-    reducedMotion.addEventListener('change', event => {
-      if (event.matches) showAll();
-    });
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', remeasure, { passive: true });
+    window.addEventListener('pageshow', remeasure);
+    reducedMotion.addEventListener('change', remeasure);
+    if ('ResizeObserver' in window) {
+      const layout = new ResizeObserver(remeasure);
+      layout.observe(main);
+      layout.observe(document.body);
+    }
   } catch {
     // Content stays readable if enhancement cannot be initialized.
-    showAll();
+    root.classList.remove('scroll-reveals');
   }
 })();
