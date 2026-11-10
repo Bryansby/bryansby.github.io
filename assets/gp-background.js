@@ -44,13 +44,12 @@
     });
   };
   const palette = [
-    ['16, 164, 190', '93, 103, 223', '190, 82, 187', '241, 133, 96', '63, 181, 139'],
-    ['49, 178, 129', '20, 152, 199', '137, 87, 222', '229, 94, 156', '242, 158, 91'],
-    ['240, 145, 77', '212, 87, 177', '111, 94, 220', '15, 160, 189', '65, 180, 135']
+    ['29, 171, 192', '109, 119, 225', '190, 102, 193', '237, 146, 112', '91, 190, 154'],
+    ['76, 184, 145', '36, 162, 199', '145, 108, 222', '226, 115, 166', '238, 169, 112'],
+    ['235, 157, 98', '210, 108, 183', '124, 114, 221', '29, 167, 190', '94, 189, 150']
   ];
-  const ribbonLayers = 64;
-  const shimmerLayers = 24;
-  const motionSpeed = 1.45;
+  const ribbonLayers = 24;
+  const motionSpeed = 2.2;
   const bands = palette.map((colors, band) => ({
     colors,
     center: 0.22 + band * 0.29,
@@ -77,28 +76,11 @@
 
   const trace = values => {
     context.beginPath();
-    context.moveTo(-0.05 * width, values[0]);
-    for (let i = 1; i < count - 1; i++) {
-      const x = (i / (count - 1) * 1.1 - 0.05) * width;
-      const nextX = ((i + 1) / (count - 1) * 1.1 - 0.05) * width;
-      context.quadraticCurveTo(x, values[i], (x + nextX) / 2, (values[i] + values[i + 1]) / 2);
-    }
-    context.lineTo(1.05 * width, values[count - 1]);
-  };
-
-  const fillSurface = (surface, lower, upper) => {
-    context.beginPath();
     for (let i = 0; i < count; i++) {
       const x = (i / (count - 1) * 1.1 - 0.05) * width;
-      const y = surface(i, lower);
-      if (i === 0) context.moveTo(x, y);
-      else context.lineTo(x, y);
+      if (i === 0) context.moveTo(x, values[i]);
+      else context.lineTo(x, values[i]);
     }
-    for (let i = count - 1; i >= 0; i--) {
-      context.lineTo((i / (count - 1) * 1.1 - 0.05) * width, surface(i, upper));
-    }
-    context.closePath();
-    context.fill();
   };
 
   const draw = () => {
@@ -116,56 +98,45 @@
           0.014 * Math.sin(i / (count - 1) * Math.PI * 2 - motionTime * 0.09 + bandIndex * 1.2)
         ));
 
-      // A travelling fold bends the whole surface, including its satin sheen.
-      // Soft light and shadow across the cloth give depth without hard edges.
+      // Feathered colour layers follow the GP curves like translucent silk.
+      // The palette shifts across each ribbon as well as along its length.
       const halfWidth = Float64Array.from(center, (_, i) => amplitude * (
         0.081 + 0.03375 * (1 + Math.sin(i / (count - 1) * 5 - motionTime * 0.07 + bandIndex))
       ));
-      const fold = Float64Array.from(center, (_, i) =>
-        0.17 * Math.sin(i / (count - 1) * 5.5 - motionTime * 0.08 + bandIndex * 0.9));
-      const surface = (i, position) => center[i] + halfWidth[i] * (
-        position + (1 - position * position) * fold[i]
-      );
       for (let layer = 0; layer < ribbonLayers; layer++) {
         const lower = layer / ribbonLayers * 2 - 1;
         const upper = (layer + 1) / ribbonLayers * 2 - 1;
         context.fillStyle = gradients[bandIndex].ribbon[layer];
         context.globalAlpha = Math.sin(Math.PI * (layer + 0.5) / ribbonLayers) ** 0.85;
-        fillSurface(surface, lower, upper);
-      }
-
-      // A broad, feathered glint travels along the fold in about 20 seconds.
-      // Periodic light avoids a visible reset and staggers the three ribbons.
-      const shimmer = context.createLinearGradient(-0.05 * width, 0, 1.05 * width, 0);
-      const shimmerStrength = width < 600 ? 0.2 : 0.28;
-      for (let stop = 0; stop <= 32; stop++) {
-        const along = stop / 32;
-        const light = (1 + Math.cos(along * Math.PI * 2 - motionTime * 0.22 - bandIndex * 1.9)) / 2;
-        shimmer.addColorStop(along, `rgba(255, 253, 250, ${shimmerStrength * light ** 6})`);
-      }
-      context.fillStyle = shimmer;
-      for (let layer = 0; layer < shimmerLayers; layer++) {
-        const lower = -0.58 + layer / shimmerLayers * 0.88;
-        const upper = -0.58 + (layer + 1) / shimmerLayers * 0.88;
-        const across = (lower + upper) / 2;
-        context.globalAlpha = Math.exp(-(((across + 0.14) / 0.2) ** 2));
-        fillSurface(surface, lower, upper);
+        context.beginPath();
+        for (let i = 0; i < count; i++) {
+          const x = (i / (count - 1) * 1.1 - 0.05) * width;
+          const y = center[i] + halfWidth[i] * lower;
+          if (i === 0) context.moveTo(x, y);
+          else context.lineTo(x, y);
+        }
+        for (let i = count - 1; i >= 0; i--) {
+          context.lineTo((i / (count - 1) * 1.1 - 0.05) * width, center[i] + halfWidth[i] * upper);
+        }
+        context.closePath();
+        context.fill();
       }
       context.globalAlpha = 1;
 
       band.strands.forEach((strand, index) => {
-        if (index % (width < 600 ? 4 : 2)) return;
+        if (width < 600 && index % 2) return;
         const angle = motionTime * 0.046 + strand.phase;
         const a = Math.cos(angle);
         const b = Math.sin(angle);
         for (let i = 0; i < count; i++) {
-          yValues[i] = surface(i, strand.offset * 0.72) + amplitude *
-            (strand.a[i] * a + strand.b[i] * b) * 0.008;
+          yValues[i] = center[i] + amplitude * (
+            strand.offset * 0.044 + (strand.a[i] * a + strand.b[i] * b) * 0.044
+          );
         }
         trace(yValues);
         context.strokeStyle = gradients[bandIndex].line;
-        context.lineWidth = 1.2;
-        context.globalAlpha = 0.16;
+        context.lineWidth = index % 4 === 0 ? 1.6 : 0.95;
+        context.globalAlpha = index % 4 === 0 ? 0.9 : 0.65;
         context.stroke();
       });
       context.globalAlpha = 1;
@@ -189,18 +160,13 @@
       const rgb = band.colors.map(color => color.split(',').map(Number));
       const ribbon = Array.from({ length: ribbonLayers }, (_, layer) => {
         const gradient = context.createLinearGradient(0, 0, width, height * 0.3);
-        const positionAcross = (layer + 0.5) / ribbonLayers * 2 - 1;
-        const sheen = 0.76 * Math.exp(-(((positionAcross + 0.24) / 0.18) ** 2))
-          + 0.24 * Math.exp(-(((positionAcross - 0.68) / 0.16) ** 2));
-        const shadow = 0.28 * Math.exp(-(((positionAcross - 0.22) / 0.28) ** 2));
         rgb.forEach((_, index) => {
-          const position = (index + layer / (ribbonLayers - 1) * 1.25) % rgb.length;
+          const position = (index + layer / (ribbonLayers - 1) * 1.6) % rgb.length;
           const start = Math.floor(position);
           const blend = position - start;
-          const color = rgb[start].map((channel, i) => {
-            const base = channel * (1 - blend) + rgb[(start + 1) % rgb.length][i] * blend;
-            return Math.round(base * (1 - shadow) + (255 - base) * sheen);
-          });
+          const color = rgb[start].map((channel, i) => Math.round(
+            channel * (1 - blend) + rgb[(start + 1) % rgb.length][i] * blend
+          ));
           gradient.addColorStop(index / (rgb.length - 1), `rgba(${color.join(',')}, 0.58)`);
         });
         return gradient;
