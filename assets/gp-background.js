@@ -23,19 +23,24 @@
   };
   const normal = () => Math.sqrt(-2 * Math.log(random())) * Math.cos(2 * Math.PI * random());
   const count = 96;
-  const makeSampler = lengthScale => {
-    const kernel = (x, y) => Math.exp(-0.5 * ((x - y) / lengthScale) ** 2);
-    const cholesky = Array.from({ length: count }, () => new Float64Array(count));
-    for (let row = 0; row < count; row++) {
+  const intervalPadding = 16;
+  const rbf = (distance, lengthScale) => Math.exp(-0.5 * (distance / lengthScale) ** 2);
+  const factor = (size, covariance, noise) => {
+    const cholesky = Array.from({ length: size }, () => new Float64Array(size));
+    for (let row = 0; row < size; row++) {
       for (let column = 0; column <= row; column++) {
-        let value = kernel(row / (count - 1), column / (count - 1));
-        if (row === column) value += 1e-8;
+        let value = covariance(row, column);
+        if (row === column) value += noise;
         for (let k = 0; k < column; k++) value -= cholesky[row][k] * cholesky[column][k];
         cholesky[row][column] = row === column
           ? Math.sqrt(Math.max(value, 1e-12))
           : value / cholesky[column][column];
       }
     }
+    return cholesky;
+  };
+  const makeSampler = lengthScale => {
+    const cholesky = factor(count, (i, j) => rbf((i - j) / (count - 1), lengthScale), 1e-8);
     return () => {
       const noise = Float64Array.from({ length: count }, normal);
       return Float64Array.from(cholesky, (row, i) => {
@@ -44,6 +49,25 @@
         return value;
       });
     };
+  };
+
+  // A decorative GP posterior standard deviation around three virtual observations.
+  // The padding lets the uncertainty profile drift along its curve without wrapping.
+  const makeInterval = lengthScale => {
+    const anchors = Array.from({ length: 3 }, (_, i) => 0.05 + (i + 0.17 + 0.66 * random()) * 0.3);
+    const cholesky = factor(anchors.length, (i, j) => rbf(anchors[i] - anchors[j], lengthScale), 0.018);
+    const solved = new Float64Array(anchors.length);
+    return Float64Array.from({ length: count + 2 * intervalPadding }, (_, index) => {
+      const x = (index - intervalPadding) / (count - 1);
+      let variance = 1;
+      for (let i = 0; i < anchors.length; i++) {
+        let value = rbf(x - anchors[i], lengthScale);
+        for (let j = 0; j < i; j++) value -= cholesky[i][j] * solved[j];
+        solved[i] = value / cholesky[i][i];
+        variance -= solved[i] ** 2;
+      }
+      return Math.sqrt(Math.max(0, variance));
+    });
   };
   const palette = [
     ['29, 171, 192', '109, 119, 225', '190, 102, 193', '237, 146, 112', '91, 190, 154'],
@@ -56,7 +80,8 @@
   // Each ribbon is its own GP, with a different length scale and time evolution.
   // Jittered positions spread the field across the page without shared bands.
   const flows = Array.from({ length: flowCount }, (_, index) => {
-    const sample = makeSampler(0.1 + random() * 0.23);
+    const lengthScale = 0.1 + random() * 0.23;
+    const sample = makeSampler(lengthScale);
     return {
       colors: palette[Math.floor(random() * palette.length)],
       colorShift: random() * 5,
@@ -73,8 +98,7 @@
       b: sample(),
       c: sample(),
       d: sample(),
-      widthA: sample(),
-      widthB: sample(),
+      interval: makeInterval(0.065 + 0.2 * lengthScale),
       y: new Float64Array(count),
       spread: new Float64Array(count)
     };
@@ -111,8 +135,10 @@
       const bWeight = Math.sin(phase);
       const cWeight = Math.cos(secondary);
       const dWeight = Math.sin(secondary);
-      const widthCos = Math.cos(phase * 0.7);
-      const widthSin = Math.sin(phase * 0.7);
+      const offset = intervalPadding + (intervalPadding - 1) * Math.sin(phase * 0.8);
+      const start = Math.floor(offset);
+      const blend = offset - start;
+      const bandScale = amplitude * flow.width;
       const center = flow.y;
       const halfWidth = flow.spread;
       for (let i = 0; i < count; i++) {
@@ -122,9 +148,8 @@
           0.8 * (flow.a[i] * aWeight + flow.b[i] * bWeight) +
           0.6 * (flow.c[i] * cWeight + flow.d[i] * dWeight)
         );
-        halfWidth[i] = amplitude * flow.width * (
-          0.85 + 0.25 * Math.tanh(flow.widthA[i] * widthCos + flow.widthB[i] * widthSin)
-        );
+        const uncertainty = flow.interval[i + start] * (1 - blend) + flow.interval[i + start + 1] * blend;
+        halfWidth[i] = bandScale * (0.12 + 1.22 * uncertainty);
       }
       for (let layer = 0; layer < ribbonLayers; layer++) {
         const lower = layer / ribbonLayers * 2 - 1;
