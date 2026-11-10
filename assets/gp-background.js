@@ -135,7 +135,7 @@
       const bWeight = Math.sin(phase);
       const cWeight = Math.cos(secondary);
       const dWeight = Math.sin(secondary);
-      const offset = intervalPadding + (intervalPadding - 1) * Math.sin(phase * 0.8);
+      const offset = intervalPadding + (intervalPadding - 1) * Math.sin(phase);
       const start = Math.floor(offset);
       const blend = offset - start;
       const bandScale = amplitude * flow.width;
