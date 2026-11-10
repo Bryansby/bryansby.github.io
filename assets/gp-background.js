@@ -49,6 +49,7 @@
     ['240, 145, 77', '212, 87, 177', '111, 94, 220', '15, 160, 189', '65, 180, 135']
   ];
   const ribbonLayers = 64;
+  const shimmerLayers = 24;
   const motionSpeed = 1.45;
   const bands = palette.map((colors, band) => ({
     colors,
@@ -85,6 +86,21 @@
     context.lineTo(1.05 * width, values[count - 1]);
   };
 
+  const fillSurface = (surface, lower, upper) => {
+    context.beginPath();
+    for (let i = 0; i < count; i++) {
+      const x = (i / (count - 1) * 1.1 - 0.05) * width;
+      const y = surface(i, lower);
+      if (i === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    }
+    for (let i = count - 1; i >= 0; i--) {
+      context.lineTo((i / (count - 1) * 1.1 - 0.05) * width, surface(i, upper));
+    }
+    context.closePath();
+    context.fill();
+  };
+
   const draw = () => {
     context.clearRect(0, 0, width, height);
     const amplitude = Math.min(height, 950);
@@ -115,18 +131,25 @@
         const upper = (layer + 1) / ribbonLayers * 2 - 1;
         context.fillStyle = gradients[bandIndex].ribbon[layer];
         context.globalAlpha = Math.sin(Math.PI * (layer + 0.5) / ribbonLayers) ** 0.85;
-        context.beginPath();
-        for (let i = 0; i < count; i++) {
-          const x = (i / (count - 1) * 1.1 - 0.05) * width;
-          const y = surface(i, lower);
-          if (i === 0) context.moveTo(x, y);
-          else context.lineTo(x, y);
-        }
-        for (let i = count - 1; i >= 0; i--) {
-          context.lineTo((i / (count - 1) * 1.1 - 0.05) * width, surface(i, upper));
-        }
-        context.closePath();
-        context.fill();
+        fillSurface(surface, lower, upper);
+      }
+
+      // A broad, feathered glint travels along the fold in about 20 seconds.
+      // Periodic light avoids a visible reset and staggers the three ribbons.
+      const shimmer = context.createLinearGradient(-0.05 * width, 0, 1.05 * width, 0);
+      const shimmerStrength = width < 600 ? 0.2 : 0.28;
+      for (let stop = 0; stop <= 32; stop++) {
+        const along = stop / 32;
+        const light = (1 + Math.cos(along * Math.PI * 2 - motionTime * 0.22 - bandIndex * 1.9)) / 2;
+        shimmer.addColorStop(along, `rgba(255, 253, 250, ${shimmerStrength * light ** 6})`);
+      }
+      context.fillStyle = shimmer;
+      for (let layer = 0; layer < shimmerLayers; layer++) {
+        const lower = -0.58 + layer / shimmerLayers * 0.88;
+        const upper = -0.58 + (layer + 1) / shimmerLayers * 0.88;
+        const across = (lower + upper) / 2;
+        context.globalAlpha = Math.exp(-(((across + 0.14) / 0.2) ** 2));
+        fillSurface(surface, lower, upper);
       }
       context.globalAlpha = 1;
 
