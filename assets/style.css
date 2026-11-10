@@ -5,9 +5,7 @@
   --muted: #595b5e;
   --accent: #8c4844;
   --rule: #deded6;
-  --section-highlight: linear-gradient(145deg, #55374e, #3b263d);
-  --section-radius: 12px;
-  --section-shadow: 0 2px 4px rgb(59 38 61 / 22%), inset 0 1px rgb(255 255 255 / 13%);
+  --section-underline: inset(calc(100% - 4px) 0 1px round 2px);
   --text-size: 1.1875rem;
   --small-text: .9375rem;
   --label-size: .8125rem;
@@ -33,73 +31,60 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-
   max-width: 100%;
   padding: 5px;
   overflow-x: auto;
-  border-radius: calc(var(--section-radius) + 5px);
-  background: #eee8ef;
-  box-shadow: inset 0 0 0 1px rgb(85 55 78 / 10%);
+  border-radius: 10px;
+  background: #f5eeeb;
+  box-shadow: inset 0 0 0 1px rgb(140 72 68 / 10%);
 }
 #site-nav a {
+  position: relative;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   min-height: 44px;
   padding: 0 20px;
-  border-radius: var(--section-radius);
-  color: #3d303d;
+  border-radius: 5px;
+  color: #28232a;
   font-size: 1.0625rem;
   font-weight: 500;
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
 }
-#site-nav a:hover { background: #e1d6e2; }
-#site-nav a[aria-current="page"], #site-nav .section-pill {
-  background: var(--section-highlight);
-  box-shadow: var(--section-shadow);
+#site-nav a:hover { background: #eee2df; }
+#site-nav a[aria-current="page"] { color: #783834; }
+#site-nav a:focus-visible { outline-offset: 1px; }
+#site-nav a[aria-current="page"]::after, #site-nav .section-pill {
+  position: absolute;
+  pointer-events: none;
+  background: var(--accent);
+  clip-path: var(--section-underline);
 }
-#site-nav a[aria-current="page"] { color: #fff; }
-#site-nav a:focus-visible { outline-color: #55374e; outline-offset: 1px; }
+#site-nav a[aria-current="page"]::after { content: ""; inset: 0; }
 #site-nav .section-pill {
   display: none;
-  position: absolute;
   top: 0;
   left: 0;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: var(--section-radius);
+  z-index: 1;
 }
 #site-nav.is-sliding .section-pill { display: block; }
-/* Keep each label legible over both the moving pill and the light track. */
-#site-nav.is-sliding a {
-  background: transparent;
-  box-shadow: none;
-  color: #fff;
-  mix-blend-mode: difference;
-}
+#site-nav.is-sliding a[aria-current="page"]::after { content: none; }
 @media (prefers-reduced-motion: no-preference) {
   @view-transition { navigation: auto; }
 
-  #site-nav.has-page-transitions a[aria-current="page"] { position: relative; background: transparent; box-shadow: none; }
+  #site-nav.has-page-transitions a[aria-current="page"]::after { content: none; }
   #site-nav.has-page-transitions .section-pill { display: block; inset: 0; view-transition-name: section-pill; }
-  #site-nav.has-page-transitions .section-label { color: #fff; mix-blend-mode: difference; }
-  #site-nav.has-page-transitions a[href="index.html"] .section-label { view-transition-name: about-label; }
-  #site-nav.has-page-transitions a[href="research.html"] .section-label { view-transition-name: research-label; }
-  #site-nav.has-page-transitions a[href="tennis.html"] .section-label { view-transition-name: tennis-label; }
-  #site-nav.has-page-transitions a[href="contact.html"] .section-label { view-transition-name: contact-label; }
 
   ::view-transition-group(*) { animation-duration: 320ms; }
   ::view-transition-old(root), ::view-transition-new(root) { animation-timing-function: ease-in-out; }
 
-  /* Use the same highlight while its bounds move between pages. */
+  /* Move the underline with the link bounds, independently of the page fade. */
   ::view-transition-group(section-pill) {
     z-index: 1;
-    border-radius: var(--section-radius);
-    background: var(--section-highlight);
-    box-shadow: var(--section-shadow);
+    background: var(--accent);
+    clip-path: var(--section-underline);
     animation-timing-function: cubic-bezier(.22, 1, .36, 1);
   }
   ::view-transition-old(section-pill), ::view-transition-new(section-pill) { display: none; }
-  ::view-transition-group(about-label), ::view-transition-group(research-label),
-  ::view-transition-group(tennis-label), ::view-transition-group(contact-label) { z-index: 2; }
 }
 main { width: min(100% - 64px, 800px); min-height: calc(100vh - 218px); margin: 0 auto; padding: 64px 0 76px; }
 .eyebrow { margin: 0 0 10px; color: var(--muted); font-size: var(--label-size); font-weight: 600; letter-spacing: .105em; }
