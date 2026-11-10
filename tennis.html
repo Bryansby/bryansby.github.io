@@ -71,13 +71,13 @@
   const current = () => photos.reduce((best, photo, index) =>
     Math.abs(position(index) - gallery.scrollLeft) < Math.abs(position(best) - gallery.scrollLeft) ? index : best, 0);
   const show = index => gallery.scrollTo({
-    left: position(Math.max(0, Math.min(photos.length - 1, index))),
-    behavior: reducedMotion.matches ? 'auto' : 'smooth'
+    left: position((index + photos.length) % photos.length),
+    behavior: reducedMotion.matches || index < 0 || index >= photos.length ? 'instant' : 'smooth'
   });
   const update = () => {
     const index = current();
-    previous.disabled = index === 0;
-    next.disabled = index === photos.length - 1;
+    previous.disabled = photos.length < 2;
+    next.disabled = photos.length < 2;
     const label = `${index + 1} / ${photos.length}`;
     if (count.textContent !== label) count.textContent = label;
   };
